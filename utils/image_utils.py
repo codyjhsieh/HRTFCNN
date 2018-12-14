@@ -14,7 +14,7 @@ def get_canny_image(img):
     plt.show()
     return edges
 
-def get_image(num):
+def get_image(folder, num):
     num_str = str(num)
     if num < 100:
         num_str = '0' + num_str
@@ -22,27 +22,27 @@ def get_image(num):
         num_str = '0' + num_str
     num = num_str
     try:
-        return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/'+str(num)+'_left_side.jpg'), 0
+        return plt.imread(folder+ 'Subject_'+str(num)+'/'+str(num)+'_left_side.jpg'), 0
     except:
         try:
-            return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/'+str(num)+'_right_side.jpg'), 1
+            return plt.imread(folder+ 'Subject_'+str(num)+'/'+str(num)+'_right_side.jpg'), 1
         except:
             try:
-                return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/0'+str(num)+'_left.jpg'), 0
+                return plt.imread(folder+ 'Subject_'+str(num)+'/0'+str(num)+'_left.jpg'), 0
             except:
                 try:
-                    return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/0'+str(num)+'_right.jpg'), 1
+                    return plt.imread(folder+ 'Subject_'+str(num)+'/0'+str(num)+'_right.jpg'), 1
                 except:
                     try:
-                        return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/0'+str(num)+'_left.JPG'), 0
+                        return plt.imread(folder+ 'Subject_'+str(num)+'/0'+str(num)+'_left.JPG'), 0
                     except:
                         try:
-                            return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/0'+str(num)+'_right.JPG'), 1
+                            return plt.imread(folder+ 'Subject_'+str(num)+'/0'+str(num)+'_right.JPG'), 1
                         except:
                             try:
-                                return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/Subject_'+str(num)+'_left_side.jpg'), 0
+                                return plt.imread(folder+ 'Subject_'+str(num)+'/Subject_'+str(num)+'_left_side.jpg'), 0
                             except:
                                 try:
-                                    return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/0'+str(num)+'_left_2.jpg'), 0
+                                    return plt.imread(folder+ 'Subject_'+str(num)+'/0'+str(num)+'_left_2.jpg'), 0
                                 except:
-                                    return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/00'+str(58)+'_left.jpg'), 0
+                                    return plt.imread(folder+ 'Subject_'+str(num)+'/00'+str(58)+'_left.jpg'), 0
