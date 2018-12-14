@@ -1,0 +1,7 @@
+data/cipic_hrtf_sofa/*
+data/CIPIC_hrtf_database/*
+test.py
+test.sofa
+images/*
+*.pyc
+*ipynb_checkpoints
