@@ -13,6 +13,9 @@ One part of this project is a few tools used to load and write SOFA and Matlab f
 ### CIPIC
 Perhaps the most public database of HRTFs, the database created by the Center for Image Processing and Integrated Computing (CIPIC) of the University of California at Davis is incredibly simple and standardized. This project mainly focuses on the CIPIC database of HRTFs. In this dataset, we have 45 speakers with 50 elevations and 25 different azimuths. It also includes anthropomorphic measurements and images of ears which will prove to cause issues in the long run and will be explained in the Neural Network section. On the official website, the HRTFs are stored in Matlab files which allow easy storage of matricies. 
 
+Ear Images: https://drive.google.com/open?id=1rJT5NgX_OoI_5_fFxQmjGvxo6ZgFSvN_
+HRTFs and Measurements: https://drive.google.com/open?id=1a6LihoO2agENYDM6qdpL9tqUa4yQBHTn
+
 https://www.ece.ucdavis.edu/cipic/spatial-sound/hrtf-data/
 ### SOFA
 However, as HRTFs have gained popularity, people have felt the need to create a common convention for storage. What the entire industry has seemed to accept is the SOFA (Spatially Oriented Format for Acoustics) file format which was standardized by the AES (Audio Engineering Society). However, since this file format is relatively new, and spatial audio is somewhat of a niche focus, especially in machine learning, there isn't much support for the file format in many of the popular programming languages. Thus, in order to make this project work, we needed to develop a few utilities that can load and save SOFA files, especially since in this project we mainly used the python programming language. This choice to use python was based off a pretty recent standard for machine learning frameworks (Keras, TensorFlow, and PyTorch) for using python. It's also an incredibly simple language and in order to use Google Colab, you need python.
