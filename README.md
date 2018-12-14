@@ -1,6 +1,8 @@
 # HRTFCNN
 Convolutional Neural Network to Estimate HRTF for Spatial Audio
 
+COLAB NOTEBOOK: https://colab.research.google.com/drive/1YjlgEzn3wjde6VCa5mpQx4DTGrymTJgo
+
 ## Introduction
 With the recent popularity of virtual reality, the concept of spatial audio has generated a lot more buzz in recent years. However, the problem for truly realistic spatial audio is an incredibly complex and difficult process. One of the primary methods for simulating realistic spatial audio is using HRTFs, or Head Related Transfer Functions. These functions essentially map the relationship between a sound source and how that sound propogates throughout a person's ear. Thus, HRTFs are incredibly individualized and without accurate HRTFs, spatial audio fails pretty poorly. Current state of the art methods primarily rely on measuring HRTFs using expensive and complex microphone and speaker arrays in anechoic chambers, but with the rapid advancement of machine learning in the past decade, there's likely a more efficient and cheaper alternative. 
 
