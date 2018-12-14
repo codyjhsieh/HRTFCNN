@@ -20,6 +20,7 @@ def get_image(num):
         num_str = '0' + num_str
     if num < 10:
         num_str = '0' + num_str
+    num = num_str
     try:
         return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/'+str(num)+'_left_side.jpg'), 0
     except:
