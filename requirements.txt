@@ -2,3 +2,7 @@ scipy
 numpy
 matplotlib
 h5py
+opencv-python
+keras
+tensorflow
+sklearn
