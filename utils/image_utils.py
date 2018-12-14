@@ -15,6 +15,11 @@ def get_canny_image(img):
     return edges
 
 def get_image(num):
+    num_str = str(num)
+    if num < 100:
+        num_str = '0' + num_str
+    if num < 10:
+        num_str = '0' + num_str
     try:
         return plt.imread('./binural-updates/ear_photos/Subject_'+str(num)+'/'+str(num)+'_left_side.jpg'), 0
     except:
