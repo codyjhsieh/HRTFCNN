@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#05070c" />
+  <title>Offline LLM · Liquid Glass</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <!-- Animated wallpaper: gives the Liquid Glass something to refract & reflect -->
+  <div class="wallpaper" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <span class="blob b4"></span>
+  </div>
+
+  <!-- SVG filters that drive the glass lensing / refraction -->
+  <svg class="svg-defs" aria-hidden="true" width="0" height="0">
+    <defs>
+      <!-- Edge lensing: turbulence-driven displacement bends the backdrop at the rim -->
+      <filter id="lg-lens" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.009 0.012" numOctaves="2" seed="17" result="noise" />
+        <feGaussianBlur in="noise" stdDeviation="1.4" result="soft" />
+        <feDisplacementMap in="SourceGraphic" in2="soft" scale="22" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+      <!-- Gentle liquid wobble for morphing surfaces -->
+      <filter id="lg-wobble" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.006 0.006" numOctaves="1" seed="7" result="n">
+          <animate attributeName="baseFrequency" dur="14s" values="0.006 0.006;0.009 0.007;0.006 0.006" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="app">
+    <header class="topbar lg lg-bar">
+      <div class="lg-tint"></div><div class="lg-edge"></div><div class="lg-spec"></div>
+      <div class="brand">
+        <span class="dot" id="status-dot"></span>
+        <span class="brand-text">Offline&nbsp;LLM</span>
+        <span class="model-pill lg lg-capsule" id="model-pill">
+          <span class="lg-tint"></span><span class="lg-edge"></span><span class="lg-spec"></span>
+          <span class="pill-label">Llama&nbsp;3.2&nbsp;1B</span>
+        </span>
+      </div>
+      <div class="topbar-right">
+        <span id="net-state" class="net-state" title="Network is not required after the model is cached">offline-capable</span>
+        <button id="clear-btn" class="ghost-btn lg lg-capsule lg-press" title="Clear conversation">
+          <span class="lg-tint"></span><span class="lg-edge"></span><span class="lg-spec"></span>
+          <span class="btn-label">Clear</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Load gate -->
+    <section id="load-gate" class="load-gate">
+      <div class="load-card lg lg-panel lg-morph">
+        <div class="lg-tint"></div><div class="lg-edge"></div><div class="lg-spec"></div>
+        <div class="lg-content">
+          <h1>Run an LLM fully on-device</h1>
+          <p class="sub">
+            Llama&nbsp;3.2&nbsp;1B (4-bit) runs in your browser via <strong>WebGPU</strong>.
+            It downloads once (~0.8&nbsp;GB), caches, then works with
+            <strong>no network at all</strong>.
+          </p>
+
+          <div id="gpu-warning" class="gpu-warning hidden">
+            ⚠️ <span id="gpu-warning-text">WebGPU is not available in this browser.</span>
+          </div>
+
+          <button id="load-btn" class="primary-btn lg lg-capsule lg-press lg-accent">
+            <span class="lg-tint"></span><span class="lg-edge"></span><span class="lg-spec"></span>
+            <span class="btn-label">Load model</span>
+          </button>
+
+          <div id="progress-wrap" class="progress-wrap hidden">
+            <div class="progress-bar lg lg-capsule">
+              <span class="lg-edge"></span>
+              <div id="progress-fill" class="progress-fill"><span class="fill-sheen"></span></div>
+            </div>
+            <div id="progress-text" class="progress-text">Initializing…</div>
+          </div>
+
+          <details class="adv">
+            <summary>Options</summary>
+            <label class="adv-row">
+              Model build
+              <span class="select-wrap lg lg-capsule">
+                <span class="lg-tint"></span><span class="lg-edge"></span>
+                <select id="model-select">
+                  <option value="Llama-3.2-1B-Instruct-q4f32_1-MLC" selected>Llama 3.2 1B · q4f32 (best compatibility)</option>
+                  <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B · q4f16 (smaller / faster)</option>
+                  <option value="Llama-3.2-3B-Instruct-q4f32_1-MLC">Llama 3.2 3B · q4f32 (heavier)</option>
+                </select>
+              </span>
+            </label>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chat -->
+    <main id="chat" class="chat hidden" aria-live="polite"></main>
+
+    <footer id="composer" class="composer hidden">
+      <div class="composer-glass lg lg-bar">
+        <div class="lg-tint"></div><div class="lg-edge"></div><div class="lg-spec"></div>
+        <div class="composer-row">
+          <textarea id="input" rows="1" placeholder="Ask anything… (runs on your device)"></textarea>
+          <button id="send-btn" class="send-btn lg lg-press lg-accent" disabled aria-label="Send">
+            <span class="lg-tint"></span><span class="lg-edge"></span><span class="lg-spec"></span>
+            <span class="send-glyph">↑</span>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+    <div id="stats" class="stats hidden"></div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+  <script type="module" src="./glass.js"></script>
+</body>
+</html>
