@@ -1,0 +1,7 @@
+# model_v2 dependencies (separate from the legacy TF1 requirements at repo root)
+torch>=2.1
+torchvision>=0.16     # MobileNetV3 image encoder (optional weights)
+numpy>=1.24
+scipy>=1.10            # minimum-phase reconstruction, signal utils
+sofar>=1.1            # SOFA / AES69 reading (SONICOM HRTFs); falls back to h5py if absent
+Pillow>=10.0          # ear-photo loading
