@@ -50,7 +50,8 @@ async function loadModel() {
   modelSelect.disabled = true;
   progressWrap.classList.remove("hidden");
   setStatus("loading");
-  modelPill.textContent = shortName(modelId);
+  const pillLabel = modelPill.querySelector(".pill-label") || modelPill;
+  pillLabel.textContent = shortName(modelId);
 
   try {
     engine = await webllm.CreateMLCEngine(modelId, {

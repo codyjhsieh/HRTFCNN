@@ -57,13 +57,30 @@ This is a fully static site. Drop the three files on any static host:
 - **GitHub Pages**, Netlify, Cloudflare Pages, Vercel — all work with zero config.
 - HTTPS is provided automatically, which satisfies WebGPU's secure-context rule.
 
+## Design — Apple Liquid Glass
+
+The UI is a faithful recreation of Apple's **Liquid Glass** material (iOS 26 /
+WWDC 2025). Every control is real glass:
+
+- **Translucent body** — `backdrop-filter` blur + saturation, never opaque.
+- **Edge lensing** — an SVG displacement filter (`#lg-lens`) refracts the
+  backdrop at the rim, with a bright glass bevel.
+- **Motion-tracked specular highlights** — the glint follows a virtual light
+  source: your **pointer** on desktop, the **gyroscope** on mobile (tap once to
+  grant motion access on iOS).
+- **Liquid spring animations** — press squash, bubble pop-in, panel morphs, an
+  animated wallpaper the glass refracts, and an animated rim wobble.
+- **Type** follows Apple's 17px body baseline for comfortable mobile reading.
+- Honors **`prefers-reduced-motion`** for accessibility.
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Markup + load gate + chat UI |
-| `style.css`  | Styling (dark, mobile-first) |
+| `index.html` | Markup, glass material layers, SVG lensing filters |
+| `style.css`  | Liquid Glass material + animations (mobile-first, 17px type) |
 | `app.js`     | WebLLM engine, streaming, UI logic |
+| `glass.js`   | Liquid Glass interaction layer (light tracking, gyro, press, morphs) |
 
 ## Model options (in the *Options* panel)
 
