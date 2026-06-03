@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b0d12" />
+  <title>Offline LLM · Llama 3.2 1B · WebGPU</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot" id="status-dot"></span>
+        <span class="brand-text">Offline&nbsp;LLM</span>
+        <span class="model-pill" id="model-pill">Llama&nbsp;3.2&nbsp;1B</span>
+      </div>
+      <div class="topbar-right">
+        <span id="net-state" class="net-state" title="Network is not required after the model is cached">offline-capable</span>
+        <button id="clear-btn" class="ghost-btn" title="Clear conversation">Clear</button>
+      </div>
+    </header>
+
+    <!-- Load gate: shown until the model is ready -->
+    <section id="load-gate" class="load-gate">
+      <div class="load-card">
+        <h1>Run an LLM fully on-device</h1>
+        <p class="sub">
+          Llama&nbsp;3.2&nbsp;1B (4-bit) runs in your browser via <strong>WebGPU</strong>.
+          The model downloads once (~0.8&nbsp;GB), is cached, and then works with
+          <strong>no network at all</strong>.
+        </p>
+
+        <div id="gpu-warning" class="gpu-warning hidden">
+          ⚠️ <span id="gpu-warning-text">WebGPU is not available in this browser.</span>
+        </div>
+
+        <button id="load-btn" class="primary-btn">Load model</button>
+
+        <div id="progress-wrap" class="progress-wrap hidden">
+          <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+          <div id="progress-text" class="progress-text">Initializing…</div>
+        </div>
+
+        <details class="adv">
+          <summary>Options</summary>
+          <label class="adv-row">
+            Model build
+            <select id="model-select">
+              <option value="Llama-3.2-1B-Instruct-q4f32_1-MLC" selected>
+                Llama 3.2 1B · q4f32 (best compatibility)
+              </option>
+              <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">
+                Llama 3.2 1B · q4f16 (smaller / faster, needs f16)
+              </option>
+              <option value="Llama-3.2-3B-Instruct-q4f32_1-MLC">
+                Llama 3.2 3B · q4f32 (heavier, pushes mobile limits)
+              </option>
+            </select>
+          </label>
+        </details>
+      </div>
+    </section>
+
+    <!-- Chat -->
+    <main id="chat" class="chat hidden" aria-live="polite"></main>
+
+    <footer id="composer" class="composer hidden">
+      <textarea id="input" rows="1" placeholder="Ask anything… (runs entirely on your device)"></textarea>
+      <button id="send-btn" class="send-btn" disabled aria-label="Send">↑</button>
+    </footer>
+
+    <div id="stats" class="stats hidden"></div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
