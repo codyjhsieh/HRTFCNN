@@ -1,9 +1,7 @@
-import os
-import sys
-import logging
 import numpy as np
-import h5py
 import scipy.io
+import sofar
+
 
 class HRTF(object):
 
@@ -16,6 +14,7 @@ class HRTF(object):
         self.channels = None
         self.samplingRate = samplingRate
 
+
 class CipicHRTF(HRTF):
     def __init__(self, filename, samplingRate):
 
@@ -23,9 +22,9 @@ class CipicHRTF(HRTF):
                                         samplingRate=44100.0)
 
         self.filename = filename
+        ext = filename.split('.')[-1].lower()
 
-        if self.filename.split('.')[-1] == 'mat':
-
+        if ext == 'mat':
             try:
                 elevations_vals = np.linspace(-45, 230.625, num=50)
                 azimuths_vals = np.concatenate(
@@ -44,32 +43,36 @@ class CipicHRTF(HRTF):
                 print('File ' + filename + ' not found')
                 print(err)
 
-        elif self.filename.split('.')[-1] == 'sofa':
+        elif ext == 'sofa':
             try:
-                self.impulses = self._loadImpulsesFromFileSofa()
+                sofa_obj = sofar.read_sofa(self.filename)
+                self.impulses = np.asarray(sofa_obj.Data_IR)
                 self.channels = ['left', 'right']
-                self.elevations, self.azimuths, self.distances = self._loadPositionsFromFileSofa()
-                self.elevations, self.azimuths = np.round(verticalPolarToInterauralPolarCoordinates(self.elevations, self.azimuths), 3)
+
+                positions = np.asarray(sofa_obj.SourcePosition)
+                self.azimuths = positions[:, 0]
+                self.elevations = positions[:, 1]
+                self.distances = positions[:, 2]
+                self.elevations, self.azimuths = np.round(
+                    verticalPolarToInterauralPolarCoordinates(self.elevations, self.azimuths), 3)
 
             except FileNotFoundError as err:
                 print(err)
                 print('File ' + filename + ' not found')
-        
+
         else:
-            print('File',self.filename.split('.')[-1],'not supported. Only mat and sofa are supported.')
+            print('File', ext, 'not supported. Only mat and sofa are supported.')
 
     def _loadImpulsesFromFileMat(self):
         elevations_vals = np.linspace(-45, 230.625, num=50)
         azimuths_vals = np.concatenate(
             ([-80, -65, -55], np.linspace(-45, 45, num=19), [55, 65, 80]))
-        # Load CIPIC HRTF data
         cipic = scipy.io.loadmat(self.filename)
         hrirLeft = np.transpose(cipic['hrir_l'], [2, 0, 1])
         hrirRight = np.transpose(cipic['hrir_r'], [2, 0, 1])
 
-        # Store impulse responses in time domain
         N = len(hrirLeft[:, 0, 0])
-        impulses = np.zeros((len(azimuths_vals)*len(
+        impulses = np.zeros((len(azimuths_vals) * len(
             elevations_vals), self.nbChannels, N))
         count = 0
         for i in range(len(azimuths_vals)):
@@ -80,55 +83,36 @@ class CipicHRTF(HRTF):
 
         return impulses
 
-    def _loadImpulsesFromFileSofa(self):
-
-        # Load CIPIC HRTF data
-        impulses = np.array(h5py.File(self.filename,'r')["Data.IR"].value.tolist())
-
-        return impulses
-    
-    def _loadPositionsFromFileSofa(self):
-
-        # Load CIPIC HRTF data
-        positions = np.array(h5py.File(self.filename,'r')["SourcePosition"].value.tolist())
-        azimuths = positions[:,0]
-        elevations = positions[:,1]
-        distance = positions[:,2]
-
-        return elevations, azimuths, distance
-
     def setFileImpulses(self, impulses):
         try:
-            hrtf = h5py.File(self.filename,'a')
-            hrtf["Data.IR"][:] = impulses[:]
-            hrtf.close()
+            sofa_obj = sofar.read_sofa(self.filename)
+            sofa_obj.Data_IR = np.asarray(impulses)
+            sofar.write_sofa(self.filename, sofa_obj)
         except FileNotFoundError as err:
             print(err)
-            
 
     def setFilePositions(self, elevations, azimuths):
         try:
-            hrtf = h5py.File(self.filename,'a')
-            hrtf["SourcePosition"][:,0] = azimuths
-            hrtf["SourcePosition"][:,1] = elevations
-            hrtf.close()
+            sofa_obj = sofar.read_sofa(self.filename)
+            positions = np.asarray(sofa_obj.SourcePosition)
+            positions[:, 0] = azimuths
+            positions[:, 1] = elevations
+            sofa_obj.SourcePosition = positions
+            sofar.write_sofa(self.filename, sofa_obj)
         except FileNotFoundError as err:
             print(err)
+
 
 def interauralPolarToVerticalPolarCoordinates(elevations, azimuths):
 
     elevations = np.atleast_1d(elevations)
     azimuths = np.atleast_1d(azimuths)
 
-    # Convert interaural-polar coordinates to 3D cartesian coordinates on the
-    # unit sphere
     x = np.cos(azimuths * np.pi / 180.0) * np.cos(elevations * np.pi / 180.0)
     y = np.sin(azimuths * np.pi / 180.0) * -1.0
     z = np.cos(azimuths * np.pi / 180.0) * np.sin(elevations * np.pi / 180.0)
     assert np.allclose(x**2 + y**2 + z**2, np.ones_like(elevations))
 
-    # Convert 3D cartesian coordinates on the unit sphere to vertical-polar
-    # coordinates
     azimuths = np.arctan2(-y, x) * 180.0 / np.pi
     elevations = np.arcsin(z) * 180.0 / np.pi
 
@@ -139,15 +123,11 @@ def interauralPolarToVerticalPolarCoordinates(elevations, azimuths):
 
 def verticalPolarToInterauralPolarCoordinates(elevation, azimuths):
 
-    # Convert vertical-polar coordinates to 3D cartesian coordinates on the
-    # unit sphere
     x = np.cos(elevation * np.pi / 180.0) * np.sin(azimuths * np.pi / 180.0)
     y = np.cos(elevation * np.pi / 180.0) * np.cos(azimuths * np.pi / 180.0)
     z = np.sin(elevation * np.pi / 180.0) * 1.0
     assert np.allclose(x**2 + y**2 + z**2, np.ones_like(elevation))
 
-    # Convert 3D cartesian coordinates on the unit sphere to interaural-polar
-    # coordinates
     azimuths = np.arcsin(x) * 180.0 / np.pi
     elevation = np.arctan2(z, y) * 180.0 / np.pi
 
@@ -172,35 +152,30 @@ def verticalPolarToCipicCoordinates(elevation, azimut):
 
     return elevation, azimut
 
+
 def get_hrtf_mat(hrtf_folder, num):
-    num_str = str(num)
-    if num < 100:
-        num_str = '0' + num_str
-    if num < 10:
-        num_str = '0' + num_str
-    return CipicHRTF(hrtf_folder + '/subject_' + str(num_str) + '/hrir_final.mat', 44100.0)
+    num_str = str(num).zfill(3)
+    return CipicHRTF(hrtf_folder + '/subject_' + num_str + '/hrir_final.mat', 44100.0)
+
 
 def get_hrtf_sofa(hrtf_folder, num):
-    num_str = str(num)
-    if num < 100:
-        num_str = '0' + num_str
-    if num < 10:
-        num_str = '0' + num_str
-    return CipicHRTF(hrtf_folder + '/subject_' + str(num_str) + '.sofa', 44100.0)
+    num_str = str(num).zfill(3)
+    return CipicHRTF(hrtf_folder + '/subject_' + num_str + '.sofa', 44100.0)
+
 
 def create_cipic_hrtf(template_filename, filename, impulses, elevations, azimuths):
     try:
-        reference = h5py.File(template_filename,'r')
-        hrtf = h5py.File(filename,'w')
-        
-        for key in list(reference.keys()):
-            reference.copy(key, hrtf)
+        sofa_obj = sofar.read_sofa(template_filename)
 
         elevations, azimuths = interauralPolarToVerticalPolarCoordinates(elevations, azimuths)
-        hrtf["Data.IR"][:] = impulses[:]
-        hrtf["SourcePosition"][:,0] = azimuths
-        hrtf["SourcePosition"][:,1] = elevations
-        hrtf.close()
+
+        sofa_obj.Data_IR = np.asarray(impulses)
+        positions = np.asarray(sofa_obj.SourcePosition)
+        positions[:, 0] = azimuths
+        positions[:, 1] = elevations
+        sofa_obj.SourcePosition = positions
+
+        sofar.write_sofa(filename, sofa_obj)
 
     except FileNotFoundError as err:
         print(err)

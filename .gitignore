@@ -1,7 +1,14 @@
 data/cipic_hrtf_sofa/*
 data/CIPIC_hrtf_database/*
+data/ear_photos/*
 test.py
 test.sofa
 images/*
 *.pyc
+__pycache__/
 *ipynb_checkpoints
+.venv/
+checkpoints/
+predicted.sofa
+anthro.txt
+.pytest_cache/

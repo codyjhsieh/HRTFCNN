@@ -1,59 +1,262 @@
 # HRTFCNN
-Convolutional Neural Network to Estimate HRTF for Spatial Audio
 
-COLAB NOTEBOOK: https://colab.research.google.com/drive/1YjlgEzn3wjde6VCa5mpQx4DTGrymTJgo
+Convolutional Neural Network to Estimate HRTF for Spatial Audio.
 
-## Introduction
-With the recent popularity of virtual reality, the concept of spatial audio has generated a lot more buzz in recent years. However, the problem for truly realistic spatial audio is an incredibly complex and difficult process. One of the primary methods for simulating realistic spatial audio is using HRTFs, or Head Related Transfer Functions. These functions essentially map the relationship between a sound source and how that sound propogates throughout a person's ear. Thus, HRTFs are incredibly individualized and without accurate HRTFs, spatial audio fails pretty poorly. Current state of the art methods primarily rely on measuring HRTFs using expensive and complex microphone and speaker arrays in anechoic chambers, but with the rapid advancement of machine learning in the past decade, there's likely a more efficient and cheaper alternative. 
+> **Modernized branch (`modernize-stack`).** The original notebook + Keras/TF1 +
+> Colab TPU pipeline has been replaced with a single PyTorch / PyTorch Lightning
+> training script that fits on a free T4 GPU (e.g. Lightning AI). The legacy
+> notebook (`FinalHRTFCNN.ipynb`) is kept for reference but is no longer the
+> recommended path.
 
-In this project we make slight modifications on the recent paper "Personalized HRTF Modeling Based on Deep Neural Network Using Anthropometric Measurements and Images of the Ear" by Lee et. al, a few utilities for compatibility with the standardized SOFA format, as well as an interactive iPython notebook to estimate measurements.
-
-## Utilities
-One part of this project is a few tools used to load and write SOFA and Matlab files. This is mainly based on the fact that HRTFs are usually stored in these two formats. 
-### CIPIC
-Perhaps the most public database of HRTFs, the database created by the Center for Image Processing and Integrated Computing (CIPIC) of the University of California at Davis is incredibly simple and standardized. This project mainly focuses on the CIPIC database of HRTFs. In this dataset, we have 45 speakers with 50 elevations and 25 different azimuths. It also includes anthropomorphic measurements and images of ears which will prove to cause issues in the long run and will be explained in the Neural Network section. On the official website, the HRTFs are stored in Matlab files which allow easy storage of matricies. 
-
-Ear Images: https://drive.google.com/open?id=1rJT5NgX_OoI_5_fFxQmjGvxo6ZgFSvN_
-HRTFs and Measurements: https://drive.google.com/open?id=1a6LihoO2agENYDM6qdpL9tqUa4yQBHTn
-
-https://www.ece.ucdavis.edu/cipic/spatial-sound/hrtf-data/
-### SOFA
-However, as HRTFs have gained popularity, people have felt the need to create a common convention for storage. What the entire industry has seemed to accept is the SOFA (Spatially Oriented Format for Acoustics) file format which was standardized by the AES (Audio Engineering Society). However, since this file format is relatively new, and spatial audio is somewhat of a niche focus, especially in machine learning, there isn't much support for the file format in many of the popular programming languages. Thus, in order to make this project work, we needed to develop a few utilities that can load and save SOFA files, especially since in this project we mainly used the python programming language. This choice to use python was based off a pretty recent standard for machine learning frameworks (Keras, TensorFlow, and PyTorch) for using python. It's also an incredibly simple language and in order to use Google Colab, you need python.
-
-In these utilities you can find classes for HRTFs in which you can store elevations, azimuths, and impulses. There's is still more room for expansion to all kinds of SOFA files, but current the classes are only compatible with the CIPIC SOFA format and simple saving and storage of certain attributes. Check the `utils` folder to see the files.
-
-https://www.sofaconventions.org/mediawiki/index.php/SOFA_(Spatially_Oriented_Format_for_Acoustics)
-
-## Measurement Estimation
-A big part of this project is using the combination of anthropomorphic measurements and ear images to estimate HRTFs. But unfortunately, taking anthropomorphic measurements is incredibly cumbersome since you need to use a tape measure and measure about 37 various things (e.g. angles of ears). Thus I've also built a tool using an interactive step by step Jupyter notebook to estimate these measuremnts with simple pictures. In order to do so, we take 2 pictures, front and side while holding an 8.5x11in page for comparison.
-
-From these pictures we take advantage of a technique called homography to warp the image to accurately represent measurements within the image. We can do this by selecting the four corners of the page in the image and our algorithm will flatten the page so it's actually 8.5x11 in the image and we can find the measurements of other parts. This process is the same as mobile phone page scanners. The measurements won't be super accurate but should be relatively accurate within a couple inches as long as the page is substantialy parallel to the camera plane. Essentially the notebook will prompt for the corners on the 8.5x11 page on each image and then will ask for various points (head height, neck width, etc.) and will estimate from the provided points.
-
-Homography: https://www.wikiwand.com/en/Homography_(computer_vision)
-
-
-## Convolutional Neural Network
-The real meat of the project is the machine learning aspect. What's convenient about this problem and HRTFs, is that we're trying to estimate a function and neural networks, which have gained significant advancements and popularity in the past decade, are function approximators. The way HRTFs are represented, specifically in the CIPIC database, is that we measure 200 samples as impulses for various elevations and azimuths. This is really convenient since we can represent the output of the neural network as a vector of length 200.
-
-For the input, we use the same input as given by the paper. We will use images of ears and instead of the full 37 anthropomorphic features which are too complex, we will only use 17 measurements. Thus the input is a single image, 17 measurements, the elevation, and the azimuth. We must first crop the image of the ear as well as run a Canny edge detection to essentially remove any high frequencies that don't affect the HRTF (hair, skin color, etc.). We then build this model in Keras and train the model on a Tensor Processing Unit (TPU) on Google Colab. Training takes about 5 hours. Please read the paper if you want the specific neural network architecture.
-
-Also note that our model is different from the paper in which we maintain a single neural network for the entire dataset, whereas the paper decides to do a single neural network per combination of azimuths and elevations.
-
-A huge issue with the CIPIC database is missing measurements for anthropomorphic measurements and images of ears. As a result the 45 subjects cut down to 32. Since our model is so reliant on images, this setback is incredibly detrimental. Future work to help this is described below.
-
-Results: RMLSE (Room mean log square error) for our model= -24.285 RMLSE average = −19.23 and the papers model = −18.40 This seems to have better performance than the average hrtf among the CIPIC subjects but there's still much improvement necessary and a specific test with many real subjects would show subjective accuracy. 
-
-The paper:
-https://www.mdpi.com/2076-3417/8/11/2180/pdf
-
-## Instructions
-Feel free to clone the repo and remember to run `pip install -r requirements.txt` and install jupyter to run the notebooks. If you're trying to train you'll likely want to train online so the link below on Google Colab lets you train on a free TPU for 12 hours at a time.
-
-Use the model and utils to generate a sofa file and feel free to load it in something like Max MSP. IRCAM SPAT is an incredibly helpful tool. The spat5.binaraul object lets you load in a sofa file and move audio around in various azimuths and elevations.
-
-## Plans to improve
-Since training takes 5 hours each time, there hasn't been much time to finetune the model for training. Google Colab tends to disconnect often and cut off training so in order to improve the model we could train on AWS or GCP instances. Also, in order to deal with the sparse data problem, we could use common image augmentation techniques and ZCA to preprocess the images and create more data. These techniques include random cropping in the images, rotating, brightening, etc. As a result we are only focusing on the contours of the ear, not necessarily the orientation or darkness of the image. As explained before, other future work will focus on expanding the utilties for SOFA support in python since there seems to be a lot of machine learning potential for HRTFs in the future. Finally, we can improve the anthropomorphic measurements by automatically detecting the page and automatically detecting the size of each measurement instead of manual points. This could speed up the process significantly since a lot of time is spent generating the HRTFs and training the model.
-
-In order to walk through the entire training process follow this link
+Colab notebook (legacy, TF1 era):
 https://colab.research.google.com/drive/1YjlgEzn3wjde6VCa5mpQx4DTGrymTJgo
 
+## Introduction
+
+With the recent popularity of virtual reality, the concept of spatial audio has
+generated a lot more buzz. Truly realistic spatial audio is hard: one of the
+primary tools is the **Head-Related Transfer Function (HRTF)**, which describes
+how a sound from a given direction propagates around a listener's head and
+torso into their ear canals. HRTFs are highly individual; without an accurate
+HRTF for *you*, spatial audio collapses. Today the gold-standard way to obtain
+one is to sit in an anechoic chamber surrounded by a microphone/speaker array.
+This project explores using a small neural network to estimate a personal HRTF
+from an ear photo and a handful of anthropometric measurements.
+
+It is a re-implementation, with modifications, of *"Personalized HRTF Modeling
+Based on Deep Neural Network Using Anthropometric Measurements and Images of
+the Ear"* (Lee et al., 2018, https://www.mdpi.com/2076-3417/8/11/2180/pdf).
+
+## Repository layout
+
+```
+train.py                       PyTorch Lightning training script
+predict.py                     Inference: checkpoint + (photo, anthro) -> personal SOFA file
+auto_anthro.py                 CLI for estimating 17 anthropometric measurements from 2 iPhone photos
+utils/hrtf.py                  CipicHRTF class + SOFA I/O via the `sofar` library
+utils/dsp.py                   Log-magnitude conversion + minimum-phase IR reconstruction
+utils/image_utils.py           Legacy Canny helpers used by the anthropometric notebook
+AnthropomorphicFeatures.ipynb  Legacy interactive notebook (use auto_anthro.py instead)
+FinalHRTFCNN.ipynb             Legacy Keras/TF1/TPU training notebook (kept for reference)
+tests/test_components.py       Component tests (24 tests, all CPU, < 70 s)
+data/template.sofa             SOFA template used as the schema for predicted-HRTF output
+requirements.txt
+```
+
+## Data
+
+The training pipeline expects three pieces of CIPIC data, all freely available:
+
+| What | Where to put it |
+|---|---|
+| CIPIC SOFA files (one per subject) | `data/cipic_hrtf_sofa/subject_XXX.sofa` |
+| Anthropometric measurements (`anthro.mat`) | `data/CIPIC_hrtf_database/anthropometry/anthro.mat` |
+| Ear photos | `data/ear_photos/Subject_XXX/<photo>.jpg` |
+
+Sources:
+
+- **SOFA files**: `wget -r -l1 -np http://sofacoustics.org/data/database/cipic/`
+  then move the `*.sofa` files into `data/cipic_hrtf_sofa/`.
+- **Anthropometry + ear photos**: download `CIPIC_hrtf_database.zip` from
+  https://www.ece.ucdavis.edu/cipic/spatial-sound/hrtf-data/ and arrange as above.
+
+CIPIC has 45 subjects nominally; in practice ~32 have a complete set of
+HRTFs + anthropometry + usable ear photo.
+
+### SOFA
+
+[SOFA](https://www.sofaconventions.org/) (Spatially Oriented Format for
+Acoustics) is the AES-standardized container for HRTFs. The
+`utils/hrtf.py` module wraps the
+[`sofar`](https://pypi.org/project/sofar/) library and exposes the original
+`CipicHRTF`, `get_hrtf_sofa`, `get_hrtf_mat`, and `create_cipic_hrtf` API used
+by the rest of the codebase.
+
+## Quickstart — training on a free T4 (Lightning AI / Colab / local CUDA)
+
+```bash
+git clone https://github.com/codyjhsieh/HRTFCNN.git
+cd HRTFCNN
+git checkout modernize-stack
+
+pip install -r requirements.txt
+# arrange CIPIC data under ./data/ as described above
+
+python train.py --data-dir ./data --epochs 50 --batch-size 64
+```
+
+Outputs go to `./checkpoints/`. The script auto-selects GPU + fp16 mixed
+precision when CUDA is available and falls back to CPU + fp32 otherwise.
+Lightning logs both MSE and **log-spectral distance (dB)** — the latter is the
+standard HRTF quality metric.
+
+Useful flags:
+
+- `--backbone resnet18` (default; ~11M params, fits any T4) — also try
+  `resnet50`, `convnext_tiny`, `efficientnet_b0`, etc. via `timm`.
+- `--batch-size`, `--epochs`, `--lr`, `--val-frac`, `--num-workers`, `--seed`.
+
+The train/val split is **per-subject** so that no subject's ear appears on
+both sides of the split.
+
+## Model
+
+The architecture mirrors the spirit of the original paper but uses modern
+components:
+
+- **Image branch.** The ear photo is passed through a frozen ImageNet-pretrained
+  backbone (`timm`, default `resnet18`) and a small projection head. This
+  replaces the original Canny-edge + small-CNN approach: with only ~32 usable
+  subjects, training a vision backbone from scratch is hopeless; a frozen
+  pretrained backbone gives strong pinna features for free.
+- **Tabular branch.** Anthropometric measurements + (azimuth, elevation) are
+  concatenated and passed through a small MLP.
+- **Regressor.** The image and tabular features are concatenated and decoded
+  into a **log-magnitude spectrum** (129 frequency bins) by an MLP.
+
+Unlike the original paper, which trained one network per (azimuth, elevation)
+pair, a single network is conditioned on direction and predicts the spectrum
+for any direction.
+
+**Why log-magnitude and not a raw 200-tap IR?** The legacy notebook regressed
+directly on the time-domain impulse response with an MSE loss. That target is
+poorly conditioned (every tap is weighted equally, dominated by the noisy
+tail) and the loss does not match how HRTFs are evaluated. Predicting the
+log-magnitude spectrum lets the training loss be **log-spectral distance** —
+the standard HRTF metric — and reduces the regression target to 129
+perceptually-meaningful dB values instead of 200 raw samples. At inference
+time the predicted log-magnitude is converted back to a time-domain IR via
+**minimum-phase reconstruction** (real-cepstrum folding in `utils/dsp.py`).
+This is the standard HRTF personalization recipe; phase is hard to predict
+and is perceptually dominated by interaural time differences anyway.
+
+## Measurement estimation (iPhone-only)
+
+Taking the 17 CIPIC anthropometric measurements on a real head is tedious
+(tape measures, angle gauges). `auto_anthro.py` estimates them from two
+iPhone photos:
+
+```bash
+python auto_anthro.py --front front.jpg --side side.jpg --output anthro.txt
+```
+
+You hold an 8.5×11 in. page in each photo as a known-scale reference. The
+script auto-detects the page corners via OpenCV contour finding, applies a
+4-point perspective transform to rectify the page to a known
+pixels-per-inch scale, then prompts you to click anatomical landmarks. The
+17 measurements are written as comma-separated cm values that drop straight
+into `predict.py --anthro anthro.txt`.
+
+The page-detection step used to require four manual clicks per photo in
+`AnthropomorphicFeatures.ipynb`; that notebook is kept for reference but
+`auto_anthro.py` is the recommended path — it has no notebook /
+`ipywidgets` dependency and runs from any plain Python environment.
+
+**Landmark clicks are still manual.** Fully-automatic pinna-landmark
+detection is a research problem (off-the-shelf face landmark models like
+MediaPipe FaceMesh cover the head but not the pinna). The measurement
+accuracy is approximate (a couple of cm) — the goal is to avoid the
+chamber, not to match it.
+
+## Inference: write a personal SOFA file
+
+```bash
+python predict.py \
+    --checkpoint checkpoints/hrtf-epoch49.ckpt \
+    --ear-photo my_ear.jpg \
+    --anthro anthro.txt \
+    --template data/template.sofa \
+    --output my_hrtf.sofa
+```
+
+`predict.py` loads the checkpoint, predicts a log-magnitude spectrum for
+each of the 1250 CIPIC directions, reconstructs a minimum-phase impulse
+response per direction, and writes a CIPIC-format `.sofa` file that drops
+straight into tools like **IRCAM SPAT** (`spat5.binaural` in Max/MSP) for
+real-time binaural rendering.
+
+The model is per-ear (one image, one IR), so for a true stereo HRTF run
+the script twice — once with the left-ear photo, once with the right-ear
+photo — and merge. For a first pass, the current script duplicates the
+single-ear prediction across both channels.
+
+The full **iPhone-only inference pipeline** is:
+
+```
+iPhone front + side photos ─► auto_anthro.py ─► 17 anthropometric values ─┐
+                                                                            ├─► predict.py ─► personal SOFA
+iPhone ear photo ─────────────────────────────────────────────────────────┘
+```
+
+## Tests
+
+```bash
+python -m pytest tests/test_components.py -v
+```
+
+24 tests, all CPU, runtime ~1 minute. Coverage:
+
+- **`utils/hrtf.py`**: coordinate-conversion round-trip; CipicHRTF loads
+  `data/template.sofa`; `create_cipic_hrtf` write+reload round-trip
+  preserves IR content and source positions.
+- **`utils/dsp.py`**: numpy and torch log-magnitude implementations agree;
+  minimum-phase reconstruction round-trips a smooth log-magnitude target
+  within ~1 dB LSD.
+- **`train.py`**: LSD = 0 on identical inputs; LSD > 0 on independent
+  noise; model forward returns `(B, 129)` finite outputs; backbone has 0
+  trainable params and stays in `eval()` after `.train()`; index builder
+  filters NaN anthro + missing photos correctly; dataset items have the
+  right shapes; one full Lightning training step runs end-to-end on a
+  synthetic CIPIC-shaped fixture.
+- **`predict.py`**: anthro parser handles inline and file forms; full
+  inference produces a reloadable SOFA with shape `(1250, 2, 200)`;
+  mismatched anthro dimensions raise `ValueError`.
+- **`auto_anthro.py`**: corner-ordering returns TL/TR/BR/BL canonically;
+  page detection works on axis-aligned synthetic pages and under random
+  perspective warps; rectified page comes out at the canonical
+  `(1100, 850)` size and uniformly bright; page detection returns
+  `None`/garbage for pure noise; pixel-to-cm scale matches the
+  page-based calibration; the CLI runs end-to-end in `--non-interactive`
+  mode.
+
+## Results (legacy)
+
+The original Keras/TPU run reported RMLSE = −24.285 dB (vs. dataset-average
+HRTF baseline at −19.23 dB, and the Lee et al. paper at −18.40 dB). Numbers
+for the modernized PyTorch path will depend on the chosen backbone and
+training budget; report log-spectral distance (logged automatically) for
+comparison.
+
+## Plans to improve
+
+What's still on the old stack, in priority order:
+
+- **Cross-dataset training.** Train jointly on CIPIC + HUTUBS + SONICOM —
+  same modalities (HRTFs + anthropometry + ear photos), all freely
+  available, ~6× more subjects. **Deferred** because each dataset has its
+  own SOFA conventions, sample rate, IR length, anthropometric definitions,
+  and ear-photo format; a clean implementation needs a per-dataset adapter
+  layer and dataset on disk to test against, which is meaningfully more
+  work than what's currently in this branch. This is the single biggest
+  remaining quality lever.
+- **Per-ear stereo prediction.** Run inference once per ear and merge into
+  a true stereo SOFA file, instead of duplicating the single-ear
+  prediction across both channels.
+- **Automatic pinna landmark detection.** `auto_anthro.py` auto-detects
+  the reference page; the anatomical landmarks are still manually clicked.
+  Full automation would use MediaPipe FaceMesh for head landmarks plus a
+  trained pinna-keypoint model for ear-specific landmarks.
+- **Stronger image backbone.** ResNet18 is the default; `--backbone
+  vit_small_patch14_dinov2.lvd142m` (DINOv2-small) gives much stronger
+  pinna features and is still T4-friendly when frozen.
+- **Both ears at training time.** Each CIPIC subject has two ear photos;
+  the current pipeline drops one. Training on mirror-augmented pairs ~2×
+  the effective data.
+- **Direction encoding.** `(az, el)` is currently fed as two raw floats.
+  Fourier / spherical-harmonic positional encoding reliably improves MLP
+  regressors for spatial-direction tasks.
+- **Multi-resolution STFT loss.** `auraloss` losses on the reconstructed
+  IR can complement the log-magnitude objective at multiple FFT sizes.
+- **Better evaluation.** Currently logs MSE + LSD. SOTA papers also report
+  LSD per frequency band, ITD/ILD error, and perceptual localization-model
+  error (Baumgartner 2014).
